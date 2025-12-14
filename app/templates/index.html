@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Детектирование повреждений автомобиля</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Детектирование повреждений автомобиля</h1>
+            <p>Обнаружение 14 типов повреждений кузова и элементов авто</p>
+        </header>
+
+        <main class="main-content">
+            <!-- Форма загрузки -->
+            <div class="card upload-card">
+                <h2>Загрузите изображение автомобиля</h2>
+                <form action="/detect/" method="post" enctype="multipart/form-data" class="upload-form">
+                    <div class="upload-area">
+                        <input type="file" id="fileInput" name="file" accept="image/*" required>
+                        <p>Выберите файл изображения</p>
+                        <p class="upload-sub">Поддерживаемые форматы: JPG, PNG, JPEG</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" name="show_area" value="true">
+                            Показывать площадь повреждений на изображении
+                        </label>
+                    </div>
+
+                    <button type="submit" class="analyze-btn">
+                        Начать анализ
+                    </button>
+                </form>
+
+                <div class="classes-info">
+                    <h3>Система обнаружит 14 типов повреждений:</h3>
+                    <ul>
+                        {% for class_name, russian_name in russian_names.items() %}
+                        <li>{{ russian_name }} ({{ class_name }})</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="api-info">
+                    <h3>API для разработчиков:</h3>
+                    <p><strong>POST</strong> /api/v1/detect - детекция повреждений</p>
+                    <p><strong>GET</strong> /api/v1/classes - список классов</p>
+                    <p><strong>GET</strong> /api/v1/health - проверка состояния</p>
+                </div>
+            </div>
+
+            <!-- Результаты -->
+            <div class="card results-card">
+                <h2>Результаты анализа</h2>
+
+                {% if result %}
+                    {% if result.success %}
+                        <div class="results-success">
+                            <h3>✅ Анализ завершен успешно!</h3>
+
+                            <div class="severity-badge {{ result.statistics.damage_severity|lower|replace(' ', '-') }}">
+                                <span class="severity-text">Уровень повреждений: {{ result.statistics.damage_severity }}</span>
+                            </div>
+
+                            <div class="image-comparison">
+                                <div class="image-box">
+                                    <p>Оригинальное изображение:</p>
+                                    <img src="{{ result.upload_path }}" alt="Оригинал">
+                                </div>
+                                <div class="image-box">
+                                    <p>Результат обнаружения:</p>
+                                    <img src="{{ result.result_path }}" alt="Результат">
+                                </div>
+                            </div>
+
+                            <!-- Основная статистика -->
+                            <div class="stats-section">
+                                <h3>📊 Основная статистика:</h3>
+                                <div class="stats">
+                                    <div class="stat-item">
+                                        <div class="stat-value">{{ result.statistics.total_detections }}</div>
+                                        <div class="stat-label">Всего повреждений</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">{{ result.statistics.damage_types_found }}</div>
+                                        <div class="stat-label">Типов повреждений</div>
+                                    </div>
+                                    <div class="stat-item">
+                                        <div class="stat-value">{{ result.statistics.damage_percentage }}%</div>
+                                        <div class="stat-label">Поврежденная площадь</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Статистика площади -->
+                            <div class="area-stats">
+                                <h3>📐 Статистика площади повреждений:</h3>
+                                <div class="area-grid">
+                                    <div class="area-item">
+                                        <div class="area-label">Общая площадь изображения:</div>
+                                        <div class="area-value">{{ result.statistics.image_area_formatted }}</div>
+                                    </div>
+                                    <div class="area-item">
+                                        <div class="area-label">Общая площадь повреждений:</div>
+                                        <div class="area-value">{{ result.statistics.total_damage_area_formatted }}</div>
+                                    </div>
+                                    <div class="area-item">
+                                        <div class="area-label">Процент поврежденной площади:</div>
+                                        <div class="area-value">{{ result.statistics.damage_percentage }}%</div>
+                                    </div>
+                                    <div class="area-item">
+                                        <div class="area-label">Средняя площадь повреждения:</div>
+                                        <div class="area-value">{{ result.statistics.avg_damage_area_formatted }}</div>
+                                    </div>
+                                    {% if result.statistics.max_damage %}
+                                    <div class="area-item">
+                                        <div class="area-label">Самое большое повреждение:</div>
+                                        <div class="area-value">{{ result.statistics.max_damage.area_formatted }} ({{ result.statistics.max_damage.class }})</div>
+                                    </div>
+                                    {% endif %}
+                                    {% if result.statistics.min_damage %}
+                                    <div class="area-item">
+                                        <div class="area-label">Самое маленькое повреждение:</div>
+                                        <div class="area-value">{{ result.statistics.min_damage.area_formatted }} ({{ result.statistics.min_damage.class }})</div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Обнаруженные повреждения -->
+                            <h3>🔍 Обнаруженные повреждения:</h3>
+                            <div class="detections-list">
+                                {% if result.detections %}
+                                    {% for det in result.detections %}
+                                    <div class="detection-item">
+                                        <div class="detection-header">
+                                            <div class="detection-class">
+                                                <strong>{{ det.russian_name }}</strong>
+                                            </div>
+                                            <div class="detection-confidence">
+                                                Уверенность: {{ det.confidence_percent }}%
+                                            </div>
+                                        </div>
+                                        <div class="detection-details">
+                                            <div class="detection-coords">
+                                                Координаты: [{{ det.bbox[0] }}, {{ det.bbox[1] }}] - [{{ det.bbox[2] }}, {{ det.bbox[3] }}]
+                                            </div>
+                                            <div class="detection-size">
+                                                Размер: {{ det.width }}×{{ det.height }}px
+                                            </div>
+                                            <div class="detection-area">
+                                                Площадь: {{ det.area_formatted }} ({{ det.area_percentage }}% от изображения)
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                {% else %}
+                                    <p>Повреждений не обнаружено</p>
+                                {% endif %}
+                            </div>
+
+                            <!-- Распределение по классам -->
+                            {% if result.statistics.class_counts %}
+                            <h3>📈 Распределение по классам:</h3>
+                            <div class="class-distribution">
+                                {% for class_name, count in result.statistics.class_counts.items() %}
+                                <div class="class-item">
+                                    <div class="class-info">
+                                        <span class="class-name">
+                                            {% if class_name in russian_names %}
+                                                {{ russian_names[class_name] }}
+                                            {% else %}
+                                                {{ class_name }}
+                                            {% endif %}
+                                        </span>
+                                        <span class="class-count">{{ count }} обнаруж.</span>
+                                    </div>
+                                    <div class="class-bar">
+                                        <div class="class-bar-fill" style="width: {{ (count / result.statistics.total_detections * 100)|round(1) }}%"></div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <div class="results-error">
+                            <h3>❌ Ошибка!</h3>
+                            <p>{{ result.error }}</p>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="results-placeholder">
+                        <p>Загрузите изображение автомобиля для анализа.</p>
+                        <p>Система автоматически обнаружит повреждения и отобразит результаты здесь.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>Car Damage Detector API v2.0 | 14 классов повреждений | Статистика площади повреждений</p>
+            <p class="timestamp">{% if result and result.success %}Последний анализ: {{ result.statistics.detection_time }}{% endif %}</p>
+        </footer>
+    </div>
+</body>
+</html>

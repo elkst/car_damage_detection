@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Статические файлы (только содержимое)
+static/uploads/*
+static/results/*
+
+# Модели
+*.pt
+!best.pt
+weights
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Временные файлы
+*.tmp
+*.log
+*.db
+
+# Системные файлы
+.DS_Store
+Thumbs.db
