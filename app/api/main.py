@@ -22,7 +22,7 @@ TEMPLATES_DIR = BASE_DIR / "templates"  # Папка для HTML шаблоно�
 (STATIC_DIR / "results").mkdir(exist_ok=True)  # Для обработанных фото
 
 # Настраиваем FastAPI для работы с файлами и шаблонами
-app.mount("../static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATES_DIR)
 
 # Список типов повреждений которые может найти модель
