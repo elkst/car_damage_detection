@@ -1,23 +1,33 @@
-# api/index.py - точка входа для Vercel
+# api/index.py
 import sys
 import os
 
-# Добавляем папку app в путь Python
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app'))
+# Добавляем путь к корню проекта
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-# Импортируем ваше приложение из app/main.py
 try:
-    from main import app  # Импорт из папки app/
+    # Пробуем импортировать из main.py в корне
+    from main import app
 
-    print("✓ Успешно импортировано из app/main.py")
-except ImportError as e:
-    print(f"✗ Ошибка импорта из app/main.py: {e}")
-    # Создаем минимальное приложение как fallback
-    from fastapi import FastAPI
+    print("✓ Импортировано из main.py")
+except ImportError:
+    try:
+        # Пробуем импортировать из app/main.py
+        sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'app'))
+        from main import app
 
-    app = FastAPI()
+        print("✓ Импортировано из app/main.py")
+    except ImportError as e:
+        print(f"✗ Ошибка импорта: {e}")
+        # Создаём минимальное приложение
+        from fastapi import FastAPI
+
+        app = FastAPI()
 
 
-    @app.get("/")
-    async def root():
-        return {"message": "Приложение загружено, но основной импорт не удался"}
+        @app.get("/")
+        async def root():
+            return {
+                "status": "running",
+                "message": "FastAPI работает на Vercel"
+            }
