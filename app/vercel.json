@@ -1,7 +1,8 @@
 {
   "functions": {
     "api/main.py": {
-      "runtime": "python3.11"
+      "runtime": "python3.11",
+      "handler": "app"
     }
   },
   "rewrites": [
